@@ -1,0 +1,6 @@
+
+PS C:\Data\XTRONS_ESP32_Volume_Knob\XTRONS_ESP32_Volume_Knob> Get-FileHash .\GrowCube_Factory_Backup.bin -Algorithm SHA256
+
+Algorithm       Hash                                                                   Path                                                                                                                  
+---------       ----                                                                   ----                                                                                                                  
+SHA256          BF97E1C612F96E6EAACA18C7B843B5D4B74B7528E5AE828C20C4098A9EC54571       C:\Data\XTRONS_ESP32_Volume_Knob\XTRONS_ESP32_Volume_Knob\GrowCube_Factory_Backup.bin                                 
