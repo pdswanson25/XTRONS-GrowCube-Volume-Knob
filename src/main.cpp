@@ -35,8 +35,9 @@ constexpr int TOUCH_INT = 5;
 // COLORS
 // =====================================================
 
-constexpr uint16_t COLOR_BG   = RGB565_BLACK;
-constexpr uint16_t COLOR_TEXT = RGB565_WHITE;
+constexpr uint16_t COLOR_BG        = RGB565(18, 52, 86);
+constexpr uint16_t COLOR_TEXT      = RGB565(255, 255, 255);
+constexpr uint16_t COLOR_HIGHLIGHT = RGB565(70, 130, 190);
 
 // =====================================================
 // TIMING
@@ -44,6 +45,7 @@ constexpr uint16_t COLOR_TEXT = RGB565_WHITE;
 
 constexpr unsigned long TOUCH_DEBOUNCE_MS = 250;
 constexpr unsigned long TOUCH_LOCKOUT_AFTER_KNOB_MS = 400;
+constexpr unsigned long TOUCH_FLASH_MS = 120;
 
 // =====================================================
 // USB HID
@@ -103,6 +105,55 @@ void sendMediaCommand(uint16_t command)
 }
 
 // =====================================================
+// BUTTON DRAWING
+// =====================================================
+
+void drawPrevButton(uint16_t bgColor)
+{
+    gfx->fillRect(0, 70, 80, 120, bgColor);
+
+    gfx->setTextColor(COLOR_TEXT);
+
+    gfx->setTextSize(4);
+    gfx->setCursor(28, 100);
+    gfx->print("<");
+
+    gfx->setTextSize(1);
+    gfx->setCursor(22, 155);
+    gfx->print("PREV");
+}
+
+void drawPlayButton(uint16_t bgColor)
+{
+    gfx->fillRect(80, 70, 80, 120, bgColor);
+
+    gfx->setTextColor(COLOR_TEXT);
+
+    gfx->setTextSize(3);
+    gfx->setCursor(92, 103);
+    gfx->print(">||");
+
+    gfx->setTextSize(1);
+    gfx->setCursor(100, 155);
+    gfx->print("PLAY");
+}
+
+void drawNextButton(uint16_t bgColor)
+{
+    gfx->fillRect(160, 70, 80, 120, bgColor);
+
+    gfx->setTextColor(COLOR_TEXT);
+
+    gfx->setTextSize(4);
+    gfx->setCursor(190, 100);
+    gfx->print(">");
+
+    gfx->setTextSize(1);
+    gfx->setCursor(188, 155);
+    gfx->print("NEXT");
+}
+
+// =====================================================
 // DRAW MEDIA SCREEN
 // =====================================================
 
@@ -112,37 +163,13 @@ void drawMediaScreen()
 
     gfx->setTextColor(COLOR_TEXT);
 
-    // Title
     gfx->setTextSize(2);
     gfx->setCursor(88, 35);
     gfx->print("MEDIA");
 
-    // Previous
-    gfx->setTextSize(4);
-    gfx->setCursor(28, 100);
-    gfx->print("<");
-
-    // Play / pause
-    gfx->setTextSize(3);
-    gfx->setCursor(92, 103);
-    gfx->print(">||");
-
-    // Next
-    gfx->setTextSize(4);
-    gfx->setCursor(190, 100);
-    gfx->print(">");
-
-    // Labels
-    gfx->setTextSize(1);
-
-    gfx->setCursor(22, 155);
-    gfx->print("PREV");
-
-    gfx->setCursor(100, 155);
-    gfx->print("PLAY");
-
-    gfx->setCursor(188, 155);
-    gfx->print("NEXT");
+    drawPrevButton(COLOR_BG);
+    drawPlayButton(COLOR_BG);
+    drawNextButton(COLOR_BG);
 }
 
 // =====================================================
@@ -250,8 +277,6 @@ void loop()
 
     if (lastButton == HIGH && button == LOW)
     {
-        // Ignore touch events caused by physically
-        // pressing the screen/knob assembly.
         ignoreTouchUntil =
             millis() + TOUCH_LOCKOUT_AFTER_KNOB_MS;
 
@@ -259,7 +284,6 @@ void loop()
             CONSUMER_CONTROL_MUTE
         );
 
-        // Button debounce
         delay(150);
     }
 
@@ -273,19 +297,12 @@ void loop()
     {
         unsigned long now = millis();
 
-        // ---------------------------------------------
         // Physical knob always wins
-        // ---------------------------------------------
-
         if (button == LOW || now < ignoreTouchUntil)
         {
             delay(1);
             return;
         }
-
-        // ---------------------------------------------
-        // Touch debounce
-        // ---------------------------------------------
 
         if (now - lastTouchTime > TOUCH_DEBOUNCE_MS)
         {
@@ -294,38 +311,58 @@ void loop()
             int x = touch.data.x;
             int y = touch.data.y;
 
-            /*
-                Current touch layout:
-
-                 LEFT      CENTER      RIGHT
-
-                 PREV     PLAY/PAUSE    NEXT
-            */
-
+            // Only respond within the media button area
             if (y > 60 && y < 190)
             {
-                // Left third
+                // -------------------------------------
+                // PREVIOUS
+                // -------------------------------------
+
                 if (x < 80)
                 {
+                    drawPrevButton(COLOR_HIGHLIGHT);
+
                     sendMediaCommand(
                         CONSUMER_CONTROL_SCAN_PREVIOUS
                     );
+
+                    delay(TOUCH_FLASH_MS);
+
+                    drawPrevButton(COLOR_BG);
                 }
 
-                // Center third
+                // -------------------------------------
+                // PLAY / PAUSE
+                // -------------------------------------
+
                 else if (x < 160)
                 {
+                    drawPlayButton(COLOR_HIGHLIGHT);
+
                     sendMediaCommand(
                         CONSUMER_CONTROL_PLAY_PAUSE
                     );
+
+                    delay(TOUCH_FLASH_MS);
+
+                    drawPlayButton(COLOR_BG);
                 }
 
-                // Right third
+                // -------------------------------------
+                // NEXT
+                // -------------------------------------
+
                 else
                 {
+                    drawNextButton(COLOR_HIGHLIGHT);
+
                     sendMediaCommand(
                         CONSUMER_CONTROL_SCAN_NEXT
                     );
+
+                    delay(TOUCH_FLASH_MS);
+
+                    drawNextButton(COLOR_BG);
                 }
             }
         }
